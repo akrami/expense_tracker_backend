@@ -2,9 +2,9 @@
   "name": "expense_tracker_backend",
   "version": "1.0.0",
   "description": "the backend for expense_tracker app",
-  "main": "index.js",
+  "main": "app.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "nodemon app.js"
   },
   "repository": {
     "type": "git",
@@ -15,5 +15,14 @@
   "bugs": {
     "url": "https://github.com/akrami/expense_tracker_backend/issues"
   },
-  "homepage": "https://github.com/akrami/expense_tracker_backend#readme"
+  "homepage": "https://github.com/akrami/expense_tracker_backend#readme",
+  "dependencies": {
+    "body-parser": "^1.19.0",
+    "cors": "^2.8.5",
+    "express": "^4.17.1",
+    "mongoose": "^5.9.9"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.3"
+  }
 }
