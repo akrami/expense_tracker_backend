@@ -27,5 +27,25 @@ const addExpense = (req, res, next) => {
     });
 }
 
+const incomeCategories = (req, res, next) => {
+    Expense.distinct("category",{
+        amount: {$gt : 0}
+    }).exec()
+    .then(data=>{
+        res.json(data);
+    });
+}
+
+const expenseCategories = (req, res, next) => {
+    Expense.distinct("category",{
+        amount: {$lt : 0}
+    }).exec()
+    .then(data=>{
+        res.json(data);
+    });
+}
+
 exports.getExpenses = getExpenses;
 exports.addExpense = addExpense;
+exports.incomeCategories = incomeCategories;
+exports.expenseCategories = expenseCategories;
