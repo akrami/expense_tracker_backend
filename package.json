@@ -1,0 +1,19 @@
+{
+  "name": "expense_tracker_backend",
+  "version": "1.0.0",
+  "description": "the backend for expense_tracker app",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/akrami/expense_tracker_backend.git"
+  },
+  "author": "akrami.ui@gmail.com",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/akrami/expense_tracker_backend/issues"
+  },
+  "homepage": "https://github.com/akrami/expense_tracker_backend#readme"
+}
