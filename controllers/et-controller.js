@@ -8,6 +8,18 @@ const getExpenses = (req, res, next) => {
         });
 }
 
+const getTotal = (req, res, next) => {
+    Expense.aggregate([{
+        $group: {
+            _id: null,
+            total: { $sum: "$amount" }
+        }
+    }]).exec()
+        .then(data => {
+            res.json(data);
+        });
+}
+
 const addExpense = (req, res, next) => {
     const { category, description, amount, when } = req.body;
 
@@ -46,6 +58,7 @@ const expenseCategories = (req, res, next) => {
 }
 
 exports.getExpenses = getExpenses;
+exports.getTotal = getTotal;
 exports.addExpense = addExpense;
 exports.incomeCategories = incomeCategories;
 exports.expenseCategories = expenseCategories;
