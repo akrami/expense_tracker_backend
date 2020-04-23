@@ -1,7 +1,7 @@
 const Expense = require('../models/expense');
 
 const getExpenses = (req, res, next) => {
-    Expense.find().sort({ when: -1 })
+    Expense.find().sort({ when: -1 }).limit(20)
         .exec()
         .then(data => {
             res.json(data);
