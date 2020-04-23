@@ -1,5 +1,5 @@
 const express = require('express');
-const { getExpenses, addExpense, incomeCategories, expenseCategories, getTotal, getCategorySum, getCategories, last30Days } = require('../controllers/et-controller');
+const { getExpenses, addExpense, incomeCategories, expenseCategories, getTotal, getCategorySum, getCategories, last30Days, topCategories } = require('../controllers/et-controller');
 
 const router = express.Router();
 
@@ -11,5 +11,6 @@ router.get('/categories/total', getCategorySum);
 router.get('/categories/income', incomeCategories);
 router.get('/categories/expense', expenseCategories);
 router.get('/data/last30days', last30Days);
+router.get('/data/top-categories', topCategories);
 
 module.exports = router;
