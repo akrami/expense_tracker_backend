@@ -1,6 +1,6 @@
 const Expense = require('../models/expense');
 
-const getExpenses = (req, res, next) => {
+exports.getExpenses = (req, res, next) => {
     Expense.find().sort({ when: -1 }).limit(20)
         .exec()
         .then(data => {
@@ -8,7 +8,7 @@ const getExpenses = (req, res, next) => {
         });
 }
 
-const getTotal = (req, res, next) => {
+exports.getTotal = (req, res, next) => {
     Expense.aggregate([{
         $group: {
             _id: null,
@@ -20,7 +20,7 @@ const getTotal = (req, res, next) => {
         });
 }
 
-const addExpense = (req, res, next) => {
+exports.addExpense = (req, res, next) => {
     const { category, description, amount, when } = req.body;
 
     const expense = new Expense({ category, description, amount, when })
@@ -39,14 +39,14 @@ const addExpense = (req, res, next) => {
         });
 }
 
-const getCategories = (req, res, next) => {
+exports.getCategories = (req, res, next) => {
     Expense.distinct("category").exec()
         .then(data => {
             res.json(data);
         });
 }
 
-const getCategorySum = (req, res, next) => {
+exports.getCategorySum = (req, res, next) => {
     Expense.aggregate([{
         $group: {
             _id: "$category",
@@ -56,7 +56,7 @@ const getCategorySum = (req, res, next) => {
         .then(data => res.json(data));
 }
 
-const incomeCategories = (req, res, next) => {
+exports.incomeCategories = (req, res, next) => {
     Expense.distinct("category", {
         amount: { $gt: 0 }
     }).exec()
@@ -65,7 +65,7 @@ const incomeCategories = (req, res, next) => {
         });
 }
 
-const expenseCategories = (req, res, next) => {
+exports.expenseCategories = (req, res, next) => {
     Expense.distinct("category", {
         amount: { $lt: 0 }
     }).exec()
@@ -74,7 +74,7 @@ const expenseCategories = (req, res, next) => {
         });
 }
 
-const last30Days = (req, res, next) => {
+exports.last30Days = (req, res, next) => {
     let now = new Date();
     let aimDate = new Date();
     now.setDate(now.getDate() + 1);
@@ -123,7 +123,7 @@ const last30Days = (req, res, next) => {
         .catch(error => console.error(error));
 }
 
-const topCategories = (req, res, next) => {
+exports.topCategories = (req, res, next) => {
     const aimDate = new Date();
     aimDate.setDate(aimDate.getDate()-30);
 
@@ -159,12 +159,53 @@ const topCategories = (req, res, next) => {
         .then(result => res.json(result));
 }
 
-exports.getExpenses = getExpenses;
-exports.getTotal = getTotal;
-exports.addExpense = addExpense;
-exports.getCategories = getCategories;
-exports.getCategorySum = getCategorySum;
-exports.incomeCategories = incomeCategories;
-exports.expenseCategories = expenseCategories;
-exports.last30Days = last30Days;
-exports.topCategories = topCategories;
+exports.getMonth = (req, res, next) => {
+    const { month, year } = req.params;
+    const startDate = new Date(`${year}-${month}-01`);
+    startDate.setHours(0);
+    startDate.setMinutes(0);
+    startDate.setSeconds(0);
+    startDate.setMilliseconds(0);
+    const endDate = new Date(`${year}-${month}-01`);
+    endDate.setMonth(endDate.getMonth()+1);
+    endDate.setMinutes(0);
+    endDate.setHours(0);
+    endDate.setSeconds(0);
+    endDate.setMilliseconds(0);
+
+    Expense.aggregate([
+        { $match: { "when": { $gte: startDate, $lte: endDate } } },
+        {
+            $addFields: {
+                dateRange: {
+                    $map: {
+                        input: {
+                            $range: [0, Math.ceil((endDate-startDate)/86400000)]
+                        },
+                        as: "mlt",
+                        in: { min: { $add: [startDate, { $multiply: ["$$mlt", 86400000] }] }, max: { $add: [startDate, { $multiply: [{ $add: ["$$mlt", 1] }, 86400000] }] } }
+                    }
+                }
+            }
+        },
+        { $unwind: "$dateRange" },
+        {
+            $group: {
+                _id: "$dateRange",
+                income: {
+                    $sum: {
+                        $cond: [{ $and: [{$and: [{ $gte: ["$when", "$dateRange.min"] }, { $lt: ["$when", "$dateRange.max"] }]}, {$gte:["$amount", 0]}] }, "$amount", 0]
+                    }
+                },
+                expense: {
+                    $sum: {
+                        $cond: [{ $and: [{$and: [{ $gte: ["$when", "$dateRange.min"] }, { $lt: ["$when", "$dateRange.max"] }]}, {$lt:["$amount", 0]}] }, "$amount", 0]
+                    }
+                }
+            }
+        },
+        { $sort: { "_id": 1 } },
+        { $project: { "date": "$_id.min", "income": 1, "expense": 1, "_id": 0 } }
+    ]).exec()
+        .then(result => res.json(result));
+}
