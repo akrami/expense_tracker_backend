@@ -125,7 +125,7 @@ exports.last30Days = (req, res, next) => {
 
 exports.topCategories = (req, res, next) => {
     const aimDate = new Date();
-    aimDate.setDate(aimDate.getDate()-30);
+    aimDate.setDate(aimDate.getDate() - 30);
 
     Expense.aggregate([
         { $match: { "when": { $gte: aimDate } } },
@@ -161,17 +161,9 @@ exports.topCategories = (req, res, next) => {
 
 exports.getMonth = (req, res, next) => {
     const { month, year } = req.params;
-    const startDate = new Date(`${year}-${month}-01`);
-    startDate.setHours(0);
-    startDate.setMinutes(0);
-    startDate.setSeconds(0);
-    startDate.setMilliseconds(0);
-    const endDate = new Date(`${year}-${month}-01`);
-    endDate.setMonth(endDate.getMonth()+1);
-    endDate.setMinutes(0);
-    endDate.setHours(0);
-    endDate.setSeconds(0);
-    endDate.setMilliseconds(0);
+    const startDate = new Date(year, month, 1, 0, 0, 0, 0);
+    const endDate = new Date(year, month, 1, 0, 0, 0, 0);
+    endDate.setMonth(endDate.getMonth() + 1);
 
     Expense.aggregate([
         { $match: { "when": { $gte: startDate, $lte: endDate } } },
@@ -180,7 +172,7 @@ exports.getMonth = (req, res, next) => {
                 dateRange: {
                     $map: {
                         input: {
-                            $range: [0, Math.ceil((endDate-startDate)/86400000)]
+                            $range: [0, Math.ceil((endDate - startDate) / 86400000)]
                         },
                         as: "mlt",
                         in: { min: { $add: [startDate, { $multiply: ["$$mlt", 86400000] }] }, max: { $add: [startDate, { $multiply: [{ $add: ["$$mlt", 1] }, 86400000] }] } }
@@ -194,18 +186,57 @@ exports.getMonth = (req, res, next) => {
                 _id: "$dateRange",
                 income: {
                     $sum: {
-                        $cond: [{ $and: [{$and: [{ $gte: ["$when", "$dateRange.min"] }, { $lt: ["$when", "$dateRange.max"] }]}, {$gte:["$amount", 0]}] }, "$amount", 0]
+                        $cond: [{ $and: [{ $and: [{ $gte: ["$when", "$dateRange.min"] }, { $lt: ["$when", "$dateRange.max"] }] }, { $gte: ["$amount", 0] }] }, "$amount", 0]
                     }
                 },
                 expense: {
                     $sum: {
-                        $cond: [{ $and: [{$and: [{ $gte: ["$when", "$dateRange.min"] }, { $lt: ["$when", "$dateRange.max"] }]}, {$lt:["$amount", 0]}] }, "$amount", 0]
+                        $cond: [{ $and: [{ $and: [{ $gte: ["$when", "$dateRange.min"] }, { $lt: ["$when", "$dateRange.max"] }] }, { $lt: ["$amount", 0] }] }, "$amount", 0]
                     }
                 }
             }
         },
         { $sort: { "_id": 1 } },
         { $project: { "date": "$_id.min", "income": 1, "expense": 1, "_id": 0 } }
+    ]).exec()
+        .then(result => res.json(result));
+}
+
+exports.getWeek = (req, res, next) => {
+    const { day, month, year } = req.params;
+    const tempDate = new Date(year, month, day, 0, 0, 0, 0);
+    const startDate = new Date(year, month, tempDate.getDate()-tempDate.getDay(), 0, 0, 0, 0);
+    const endDate = new Date(year, month, tempDate.getDate()+6-tempDate.getDay(), 0, 0, 0, 0);
+
+    Expense.aggregate([
+        { $match: { "when": { $gte: startDate, $lte: endDate } } },
+        {
+            $addFields: {
+                dateRange: {
+                    $map: {
+                        input: {
+                            $range: [0, Math.ceil((endDate - startDate) / 3600000)]
+                        },
+                        as: "mlt",
+                        in: { min: { $add: [startDate, { $multiply: ["$$mlt", 3600000] }] }, max: { $add: [startDate, { $multiply: [{ $add: ["$$mlt", 1] }, 3600000] }] } }
+                    }
+                }
+            }
+        },
+        { $unwind: "$dateRange" },
+        {
+            $group: {
+                _id: "$dateRange",
+                total: {
+                    $sum: {
+                        $cond: [{ $and: [{ $gte: ["$when", "$dateRange.min"] }, { $lt: ["$when", "$dateRange.max"] }] }, "$amount", 0]
+                    }
+                }
+            }
+        },
+        { $sort: { "_id": 1 } },
+        { $project: { "date": "$_id.min", "total": 1, "_id": 0 } },
+        { $match: { "total": { $ne: 0 } } }
     ]).exec()
         .then(result => res.json(result));
 }
