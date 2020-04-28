@@ -205,8 +205,8 @@ exports.getMonth = (req, res, next) => {
 exports.getWeek = (req, res, next) => {
     const { day, month, year } = req.params;
     const tempDate = new Date(year, month, day, 0, 0, 0, 0);
-    const startDate = new Date(year, month, tempDate.getDate()-tempDate.getDay(), 0, 0, 0, 0);
-    const endDate = new Date(year, month, tempDate.getDate()+6-tempDate.getDay(), 0, 0, 0, 0);
+    const startDate = new Date(year, month, tempDate.getDate() - tempDate.getDay(), 0, 0, 0, 0);
+    const endDate = new Date(year, month, tempDate.getDate() + 6 - tempDate.getDay(), 0, 0, 0, 0);
 
     Expense.aggregate([
         { $match: { "when": { $gte: startDate, $lte: endDate } } },
@@ -238,5 +238,16 @@ exports.getWeek = (req, res, next) => {
         { $project: { "date": "$_id.min", "total": 1, "_id": 0 } },
         { $match: { "total": { $ne: 0 } } }
     ]).exec()
+        .then(result => res.json(result));
+}
+
+exports.getDay = (req, res, result) => {
+    const { day, month, year } = req.params;
+    const theDay = new Date(year, month, day, 0, 0, 0, 0);
+    const nextDay = new Date(year, month, theDay.getDate() + 1, 0, 0, 0, 0);
+
+    Expense.find({
+         "when": { $gte: theDay, $lt: nextDay } 
+    }).exec()
         .then(result => res.json(result));
 }
