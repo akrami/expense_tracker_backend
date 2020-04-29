@@ -247,7 +247,13 @@ exports.getDay = (req, res, result) => {
     const nextDay = new Date(year, month, theDay.getDate() + 1, 0, 0, 0, 0);
 
     Expense.find({
-         "when": { $gte: theDay, $lt: nextDay } 
+        "when": { $gte: theDay, $lt: nextDay }
     }).exec()
         .then(result => res.json(result));
+}
+
+exports.removeExpense = (req, res, next) => {
+    const { id } = req.params;
+
+    Expense.deleteOne({ _id: id }).exec().then(() => res.json({ status: 1 }));
 }
